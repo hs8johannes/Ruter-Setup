@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pfSense Installation i Proxmox</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            overflow-x: hidden;
+        }
+        
+        .presentation-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .slide {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 40px;
+            margin: 30px 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            animation: slideIn 0.6s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .title-slide {
+            text-align: center;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #ffd700;
+            border-bottom: 2px solid rgba(255, 215, 0, 0.5);
+            padding-bottom: 10px;
+        }
+        
+        h3 {
+            font-size: 1.3em;
+            margin: 15px 0;
+            color: #87ceeb;
+        }
+        
+        p, li {
+            font-size: 1.1em;
+            line-height: 1.6;
+            margin: 10px 0;
+        }
+        
+        ul {
+            padding-left: 30px;
+            margin: 15px 0;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        .highlight {
+            background: rgba(255, 215, 0, 0.3);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        .step-number {
+            background: #ffd700;
+            color: #333;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            font-size: 1.2em;
+        }
+        
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            color: white;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 1em;
+        }
+        
+        .image-placeholder {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            text-align: center;
+            font-style: italic;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .screenshot {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            margin: 15px 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="slide-counter">
+            <span id="currentSlide">1</span> / <span id="totalSlides">16</span>
+        </div>
+        
+        <!-- Slide 1: Tittel -->
+        <div class="slide title-slide" data-slide="1">
+            <h1>Bygg din egen ruter med pfSense i Proxmox</h1>
+            <p style="font-size: 1.3em; margin: 30px 0;">En komplett guide til å installere og konfigurere pfSense som virtuell ruter</p>
+            <p>Praktisk øvelse i nettverksadministrasjon</p>
+        </div>
+        
+        <!-- Slide 2: Introduksjon -->
+        <div class="slide" data-slide="2">
+            <h2>Hva er pfSense?</h2>
+            <ul>
+                <li><span class="highlight">Kraftig ruter-programvare</span> basert på FreeBSD</li>
+                <li>Fungerer som en <span class="highlight">trafikkdirigent</span> for nettverket ditt</li>
+                <li>Styrer dataflyt mellom internett (WAN) og lokale enheter (LAN)</li>
+                <li>Gratis og open source alternativ til kommersielle rutere</li>
+                <li>Kan kjøres som virtuell maskin i Proxmox</li>
+            </ul>
+            
+            <h3>Hvorfor bruke pfSense?</h3>
+            <ul>
+                <li>Avanserte sikkerhetsinnstillinger og brannmur</li>
+                <li>VPN-støtte</li>
+                <li>Detaljert nettverksovervåking</li>
+                <li>Fleksibel konfigurering</li>
+            </ul>
+        </div>
+        
+        <!-- Slide 3: Forutsetninger -->
+        <div class="slide" data-slide="3">
+            <h2>Det du trenger før vi starter</h2>
+            
+            <h3>Hardware og Software:</h3>
+            <ul>
+                <li>PC eller server med <span class="highlight">Proxmox allerede installert</span></li>
+                <li>pfSense ISO-fil (pfSense-CE-2.7.2-RELEASE-amd64.iso)</li>
+                <li>Tilgang til Proxmox webgrensesnitt (https://192.168.1.194:8006)</li>
+                <li>Minimum 2 GB RAM og 10 GB diskplass for VM</li>
+            </ul>
+            
+            <h3>Nettverkskonfigurasjon:</h3>
+            <ul>
+                <li><span class="highlight">To nettverksgrensesnitt:</span></li>
+                <li>WAN-grensesnitt (vmbr1) - kobling til internett</li>
+                <li>LAN-grensesnitt (vmbr<X>) - kobling til lokale enheter</li>
+            </ul>
+        </div>
+        
+        <!-- Slide 4: VM-oppsett - Screenshot 1 -->
+        <div class="slide" data-slide="4">
+            <h2><span class="step-number">1</span>Opprettelse av virtuell maskin</h2>
+            
+            <img src="bilde1.png" alt="Create Virtual Machine - Confirm - VM-opprettelse i Proxmox" class="screenshot" />
+            
+            <h3>VM-spesifikasjoner som ble valgt:</h3>
+            <ul>
+                <li><span class="highlight">Navn:</span> Johannes-Ruter</li>
+                <li><span class="highlight">RAM:</span> 2 GB (2048 MB)</li>
+                <li><span class="highlight">CPU:</span> 2 kjerner</li>
+                <li><span class="highlight">Disk:</span> 10 GB (VirtIO Block)</li>
+                <li><span class="highlight">ISO:</span> pfSense-CE-2.7.2-RELEASE-amd64.iso</li>
+            </ul>
+            
+            <p>Dette skjermbildet viser at pfSense-installasjonsprosessen er fullført og systemet er klart for initial konfigurering.</p>
+        </div>
+        
+        <!-- Slide 5: VM Confirm - Screenshot 2 -->
+        <div class="slide" data-slide="5">
+            <h2><span class="step-number">2</span>VM-konfigurering - Bekreftelse</h2>
+            
+            <img src="bilde2.png" alt="Add Network Device - Legge til nettverksadapter (vmbr22)" class="screenshot" />
+            
+            <h3>Viktige konfigurasjoner som bekreftes:</h3>
+            <ul>
+                <li><span class="highlight">cores:</span> 2</li>
+                <li><span class="highlight">cpu:</span> x86-64-v2-AES</li>
+                <li><span class="highlight">memory:</span> 2048 MB</li>
+                <li><span class="highlight">name:</span> Johannes-Ruter</li>
+                <li><span class="highlight">ostype:</span> l26 (Linux 2.6+)</li>
+                <li><span class="highlight">scsi0:</span> Storage-3-vm-130-disk-0 (10G)</li>
+            </ul>
+            
+            <p>Denne oversikten sikrer at alle innstillinger er korrekte før VM-en opprettes.</p>
+        </div>
+        
+        <!-- Slide 6: Nettverkskonfigurasjon - Screenshot 3 -->
+        <div class="slide" data-slide="6">
+            <h2><span class="step-number">3</span>Nettverkskonfigurasjon</h2>
+            
+            <img src="bilde3.png" alt="pfSense boot sequence - Systemoppstart og hardware-deteksjon" class="screenshot" />
+            
+            <h3>Nettverksoppsett:</h3>
+            <ul>
+                <li><span class="highlight">Bridge:</span> vmbr22</li>
+                <li><span class="highlight">Model:</span> VirtIO (paravirtualized)</li>
+                <li><span class="highlight">MAC address:</span> Auto-generert</li>
+                <li><span class="highlight">Firewall:</span> Aktivert</li>
+            </ul>
+            
+            <h3>Hvorfor to nettverkskort?</h3>
+            <ul>
+                <li>Ett for WAN (internett-tilkobling)</li>
+                <li>Ett for LAN (lokalt nettverk)</li>
+                <li>Separering sikrer riktig nettverkssegmentering</li>
+            </ul>
+        </div>
+        
+        <!-- Slide 7: Boot Process - Screenshot 4 -->
+        <div class="slide" data-slide="7">
+            <h2><span class="step-number">4</span>Oppstart og boot-prosess</h2>
+            
+            <img src="bilde4.png" alt="pfSense Installer Configuration - Installasjonsalternativer og partisjonering" class="screenshot" />
+            
+            <h3>Boot-prosess forklart:</h3>
+            <ul>
+                <li><span class="highlight">Hardware-deteksjon:</span> CPU, minne og nettverkskort identifiseres</li>
+                <li><span class="highlight">USB og storage:</span> Disker og USB-enheter lastes</li>
+                <li><span class="highlight">Network interfaces:</span> vtnet0 og vtnet1 detekteres</li>
+                <li><span class="highlight">Root mount:</span> Filsystem monteres fra ISO</li>
+            </ul>
+            
+            <p>Dette stadiet viser at hardware-deteksjonen fungerer korrekt og systemet er klar for installasjon.</p>
+        </div>
+        
+        <!-- Slide 8: Installer - Screenshot 5 -->
+        <div class="slide" data-slide="8">
+            <h2><span class="step-number">5</span>pfSense Installer</h2>
+            
+            <img src="image5.png" alt="pfSense Installer - Configuration Options - Viser installasjonsalternativer og partisjonering" class="screenshot" />
+            
+            <h3>Installasjonalternativer:</h3>
+            <ul>
+                <li><span class="highlight">Install:</span> Hovedalternativet for permanent installasjon</li>
+                <li><span class="highlight">Pool Type/Disks:</span> stripe: 0 disks (enkelt disk)</li>
+                <li><span class="highlight">Pool Name:</span> pfSense</li>
+                <li><span class="highlight">Partition Scheme:</span> GPT (BIOS)</li>
+                <li><span class="highlight">Swap Size:</span> 1g</li>
+            </ul>
+            
+            <p>Standard innstillinger er optimale for de fleste installasjoner. GPT-partisjonering gir bedre kompatibilitet.</p>
+        </div>
+        
+        <!-- Slide 9: Archive Extraction - Screenshot 6 -->
+        <div class="slide" data-slide="9">
+            <h2><span class="step-number">6</span>Installasjonsprosess</h2>
+            
+            <img src="image6.png" alt="Archive Extraction Progress - Viser utpakking av systemfiler (26% fullført)" class="screenshot" />
+            
+            <h3>Hva skjer under installasjon:</h3>
+            <ul>
+                <li><span class="highlight">Archive Extraction:</span> base.txz pakkes ut</li>
+                <li><span class="highlight">Progress:</span> 26% fullført (7013 av 7013 filer)</li>
+                <li><span class="highlight">Hastighet:</span> 7013.0 files/sec</li>
+            </ul>
+            
+            <h3>Installasjonssteg:</h3>
+            <ul>
+                <li>Partisjonering av disk</li>
+                <li>Formatering av filsystem</li>
+                <li>Utpakking av systemfiler</li>
+                <li>Konfigurasjon av bootloader</li>
+            </ul>
+        </div>
+        
+        <!-- Slide 10: Installation Complete - Screenshot 7 -->
+        <div class="slide" data-slide="10">
+            <h2><span class="step-number">7</span>Installasjon fullført</h2>
+            
+            <img src="image7.png" alt="Installation Complete - Reboot Dialog - Viser at installasjonen er ferdig og ber om restart" class="screenshot" />
+            
+            <h3>Installasjon fullført:</h3>
+            <ul>
+                <li><span class="highlight">Status:</span> "Installation of pfSense complete!"</li>
+                <li><span class="highlight">Valg:</span> Reboot eller Shell</li>
+                <li><span class="highlight">Anbefaling:</span> Velg Reboot for å starte systemet</li>
+            </ul>
+            
+            <h3>Neste steg:</h3>
+            <ul>
+                <li>Fjern ISO-filen fra CD/DVD-stasjonen i Proxmox</li>
+                <li>Start VM-en på nytt</li>
+                <li>Systemet vil nå starte fra harddisken</li>
+            </ul>
+        </div>
+        
+        <!-- Slide 11: First Boot - Screenshot 8 -->
+        <div class="slide" data-slide="11">
+            <h2><span class="step-number">8</span>Første oppstart etter installasjon</h2>
+            
+            <img src="image8.png" alt="pfSense First Boot - Interface Assignment - Viser automatisk konfigurasjon av nettverksgrensesnitt" class="screenshot" />
+            
+            <h3>Nettverksgrensesnitt-tildeling:</h3>
+            <ul>
+                <li><span class="highlight">WAN → vtnet0:</span> Første nettverkskort (til internett)</li>
+                <li><span class="highlight">LAN → vtnet1:</span> Andre nettverkskort (til lokalt nettverk)</li>
+            </ul>
+            
+            <h3>Automatiske prosesser:</h3>
+            <ul>
+                <li>Konfigurering av loopback-grensesnitt</li>
+                <li>LAN og WAN grensesnitt konfigureres</li>
+                <li>DHCP-klient aktiveres på WAN</li>
+                <li>Syslog og andre systemtjenester startes</li>
+            </ul>
+        </div>
+        
+        <!-- Slide 12: IP Configuration - Screenshot 9 -->
+        <div class="slide" data-slide="12">
+            <h2><span class="step-number">9</span>IP-adresse konfigurasjon</h2>
+            
+            <img src="image9.png" alt="LAN IPv4 Address Configuration - Viser konfigurasjon av LAN IP-adresse (192.168.22.1)" class="screenshot" />
+            
+            <h3>LAN IP-konfigurasjon:</h3>
+            <ul>
+                <li><span class="highlight">IP-adresse:</span> 192.168.22.1</li>
+                <li><span class="highlight">Subnet mask:</span> 24 (255.255.255.0)</li>
+                <li><span class="highlight">Gateway:</span> Ikke nødvendig for LAN</li>
+            </ul>
+            
+            <h3>DHCP-server oppsett:</h3>
+            <ul>
+                <li><span class="highlight">Aktiver DHCP:</span> Ja</li>
+                <li><span class="highlight">Start-adresse:</span> 192.168.22.20</li>
+                <li><span class="highlight">Slutt-adresse:</span> 192.168.22.40</li>
+            </ul>
+            
+            <p>Dette gir automatisk IP-adresser til enheter som kobler seg til LAN-nettverket.</p>
+        </div>
+        
+        <!-- Slide 13: DHCP Configuration - Screenshot 10 -->
+        <div class="slide" data-slide="13">
+            <h2><span class="step-number">10</span>DHCP-server konfigurasjon</h2>
+            
+            <img src="image10.png" alt="DHCP Server Setup Complete - Viser fullført DHCP-konfigurasjon og tilgjengelig web-URL" class="screenshot" />
+            
+            <h3>DHCP-konfigurasjon fullført:</h3>
+            <ul>
+                <li><span class="highlight">IPv6 DHCP:</span> Deaktivert</li>
+                <li><span class="highlight">HTTP WebConfigurator:</span> Aktivert</li>
+                <li><span class="highlight">Filtersystem:</span> Lastes inn på nytt</li>
+                <li><span class="highlight">Routing:</span> Konfigureres</li>
+            </ul>
+            
+            <h3>Tilgang til web-grensesnitt:</h3>
+            <ul>
+                <li><span class="highlight">URL:</span> http://192.168.22.1/</li>
+                <li>WebConfigurator er nå tilgjengelig</li>
+                <li>Systemet er klart for fjernkonfigurasjon</li>
+            </ul>
+        </div>
+        
+        <!-- Slide 14: Web Interface - Screenshot 11 -->
+        <div class="slide" data-slide="14">
+            <h2><span class="step-number">11</span>Web-basert konfigurering</h2>
+            
+            <img src="image11.png" alt="pfSense Web Interface - Setup Wizard - Viser Netgate Global Support informasjon og Next-knapp" class="screenshot" />
+            
+            <h3>Web-grensesnitt aktivert:</h3>
+            <ul>
+                <li><span class="highlight">Tilgang:</span> Via https://192.168.22.1</li>
+                <li><span class="highlight">Standard innlogging:</span> admin / pfsense</li>
+                <li><span class="highlight">Setup Wizard:</span> Starter automatisk</li>
+            </ul>
+            
+            <h3>Netgate Global Support:</h3>
+            <ul>
+                <li>24/7 verdensomspennende støtte tilgjengelig</li>
+                <li>Profesjonelle nettverksingeniører</li>
+                <li>Sertifiseringer og års erfaring</li>
+                <li>Valgfri støtteabonnement</li>
+            </ul>
+        </div>
+        
+        <!-- Slide 15: Hardware Overview - Screenshot 12 -->
+        <div class="slide" data-slide="15">
+            <h2><span class="step-number">12</span>Hardware-oversikt</h2>
+            
+            <img src="image12.png" alt="Proxmox Hardware View - Viser VM hardware-konfigurasjon i Proxmox" class="screenshot" />
+            
+            <h3>VM Hardware-konfigurasjon bekreftet:</h3>
+            <ul>
+                <li><span class="highlight">Memory:</span> 2.00 GiB</li>
+                <li><span class="highlight">Processors:</span> 2 (1 sockets, 2 cores)</li>
+                <li><span class="highlight">BIOS:</span> Default (SeaBIOS)</li>
+                <li><span class="highlight">Display:</span> Default</li>
+                <li><span class="highlight">Machine:</span> Default (i440fx)</li>
+                <li><span class="highlight">SCSI Controller:</span> VirtIO SCSI single</li>
+            </ul>
+            
+            <h3>Lagring og nettverk:</h3>
+            <ul>
+                <li><span class="highlight">Hard Disk:</span> Storage-3-vm-130-disk-0 (10G)</li>
+                <li><span class="highlight">Network Device:</span> virtio-BC-24-11:86:68:38 (vmbr22)</li>
+            </ul>
+        </div>
+        
+        <!-- Slide 16: LAN Interface Setup - Screenshot 13 -->
+        <div class="slide" data-slide="16">
+            <h2><span class="step-number">13</span>LAN-grensesnitt konfigurasjon</h2>
+            
+            <img src="image13.png" alt="Configure LAN Interface Web Wizard - Viser web-basert LAN-konfigurasjon med IP 192.168.22.1" class="screenshot" />
+            
+            <h3>Web-wizard for LAN-konfigurasjon:</h3>
+            <ul>
+                <li><span class="highlight">LAN IP Address:</span> 192.168.22.1</li>
+                <li><span class="highlight">Subnet Mask:</span> 24 (dropdown-meny)</li>
+                <li><span class="highlight">Steg 5 av 9:</span> Configure LAN Interface</li>
+            </ul>
+            
+            <h3>Web-grensesnitt fordeler:</h3>
+            <ul>
+                <li>Intuitivt grafisk brukergrensesnitt</li>
+                <li>Validering av inndata</li>
+                <li>Dropdown-menyer for vanlige verdier</li>
+                <li>Trinn-for-trinn wizard</li>
+            </ul>
+        </div>
+        
+        <!-- Slide 17: Admin Password - Screenshot 14 -->
+        <div class="slide" data-slide="17">
+            <h2><span class="step-number">14</span>Administrator-passord</h2>
+            
+            <img src="image14.png" alt="Set Admin WebGUI Password - Viser passord-setting for admin-brukeren" class="screenshot" />
+            
+            <h3>Sikkerhetsoppsett:</h3>
+            <ul>
+                <li><span class="highlight">Admin Password:</span> Skjult inndatafelt</li>
+                <li><span class="highlight">Admin Password AGAIN:</span> Bekreftelsesfeld</li>
+                <li><span class="highlight">Steg 6 av 9:</span> Set Admin WebGUI Password</li>
+            </ul>
+            
+            <h3>Viktigheter ved passord:</h3>
+            <ul>
+                <li><span class="highlight">Sterkt passord:</span> Bruk kombinasjon av store/små bokstaver, tall og symboler</li>
+                <li><span class="highlight">Ikke del:</span> Hold passordet hemmelig</li>
+                <li><span class="highlight">Dokumenter sikkert:</span> Lagre på trygt sted</li>
+            </ul>
+        </div>
+        
+        <!-- Slide 18: Reload Progress - Screenshot 15 -->
+        <div class="slide" data-slide="18">
+            <h2><span class="step-number">15</span>Konfigurasjon lastes inn</h2>
+            
+            <img src="image15.png" alt="Reload in Progress - Viser at konfigurasjonsendringer anvendes" class="screenshot" />
+            
+            <h3>Reload-prosess:</h3>
+            <ul>
+                <li><span class="highlight">Status:</span> "A reload is now in progress. Please wait."</li>
+                <li><span class="highlight">Automatisk redirect:</span> Går til neste steg når ferdig</li>
+                <li><span class="highlight">Steg 8 av 9:</span> Nesten fullført</li>
+            </ul>
+            
+            <h3>Hva skjer under reload:</h3>
+            <ul>
+                <li>Nye passord-hash genereres</li>
+                <li>Nettverkskonfigurasjon aktiveres</li>
+                <li>Tjenester startes på nytt</li>
+                <li>Brannmur-regler lastes</li>
+            </ul>
+        </div>
+        
+        <!-- Slide 19: Konklusjon -->
+        <div class="slide" data-slide="19">
+            <h2>Gratulerer! pfSense-ruteren er klar</h2>
+            
+            <h3>Det du har oppnådd:</h3>
+            <ul>
+                <li><span class="highlight">Fullstendig pfSense-installasjon</span> i Proxmox VM</li>
+                <li><span class="highlight">Konfigurert nettverksgrensesnitt</span> (WAN og LAN)</li>
+                <li><span class="highlight">Aktivert DHCP-server</span> for automatisk IP-tildeling</li>
+                <li><span class="highlight">Satt opp web-grensesnitt</span> for fjernkonfigurasjon</li>
+                <li><span class="highlight">Sikret admin-tilgang</span> med sterkt passord</li>
+            </ul>
+            
+            <h3>Neste steg du kan utforske:</h3>
+            <ul>
+                <li>Konfigurer brannmur-regler</li>
+                <li>Sett opp VPN-tilgang</li>
+                <li>Overvåk nettverkstrafikk</li>
+                <li>Konfigurer avanserte nettverkstjenester</li>
+                <li>Test tilkobling fra LAN-klienter</li>
+            </ul>
+            
+            <h3>Viktige sikkerhetsnotater:</h3>
+            <ul>
+                <li>Hold admin-passordet hemmelig</li>
+                <li>Oppdater pfSense jevnlig</li>
+                <li>Overvåk systemlogger</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="navigation">
+        <button class="nav-btn" onclick="previousSlide()">← Forrige</button>
+        <button class="nav-btn" onclick="nextSlide()">Neste →</button>
+    </div>
+    
+    <script>
+        let currentSlideIndex = 1;
+        const totalSlides = document.querySelectorAll('.slide').length;
+        
+        document.getElementById('totalSlides').textContent = totalSlides;
+        
+        function showSlide(n) {
+            const slides = document.querySelectorAll('.slide');
+            
+            // Skjul alle slides
+            slides.forEach(slide => {
+                slide.style.display = 'none';
+            });
+            
+            // Vis current slide
+            if (n > totalSlides) currentSlideIndex = 1;
+            if (n < 1) currentSlideIndex = totalSlides;
+            
+            slides[currentSlideIndex - 1].style.display = 'block';
+            document.getElementById('currentSlide').textContent = currentSlideIndex;
+        }
+        
+        function nextSlide() {
+            currentSlideIndex++;
+            showSlide(currentSlideIndex);
+        }
+        
+        function previousSlide() {
+            currentSlideIndex--;
+            showSlide(currentSlideIndex);
+        }
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                previousSlide();
+            }
+        });
+        
+        // Initialize
+        showSlide(1);
+    </script>
+</body>
+</html>
